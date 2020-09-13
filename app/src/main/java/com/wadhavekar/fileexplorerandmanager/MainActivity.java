@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
+import androidx.core.content.FileProvider;
 
 import android.Manifest;
 import android.app.ActivityManager;
@@ -50,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
     ListView lv;
     TextAdapter adapter;
     RelativeLayout button_layout, withCopyLayout;
-    ImageView delete, createFolder, backToParent, copy,rename,move;
+    ImageView delete, createFolder, backToParent, copy,rename,move,share;
 
     private File[] files;
 
@@ -64,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<Integer> selectedItems;
     private int SELECT_PICTURE = 1;
     private String imagePath;
+    TextView sharetv,renameTv;
 
     private ArrayList<String> multipleCopyPaths = new ArrayList<>();
 
@@ -90,6 +92,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        sharetv = findViewById(R.id.tv_share);
+        renameTv= findViewById(R.id.tv_rename);
+        share = findViewById(R.id.button_share);
         paste = findViewById(R.id.button_paste);
         title = findViewById(R.id.title);
         move = findViewById(R.id.move_button);
@@ -146,8 +151,16 @@ public class MainActivity extends AppCompatActivity {
 
                         if (!oneItemSelected(selection)) {
                             rename.setVisibility(View.INVISIBLE);
+                            renameTv.setVisibility(View.INVISIBLE);
+
+                            share.setVisibility(View.INVISIBLE);
+                            sharetv.setVisibility(View.INVISIBLE);
                         } else {
                             rename.setVisibility(View.VISIBLE);
+                            renameTv.setVisibility(View.VISIBLE);
+
+                            share.setVisibility(View.VISIBLE);
+                            sharetv.setVisibility(View.VISIBLE);
                             //selectedItemIndex = i;
                         }
                     } else {
@@ -171,7 +184,7 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     if (new File(currentPath).isDirectory()) {
-                        if (currentPath.substring(currentPath.lastIndexOf('/')+1).equals('0')){
+                        if (currentPath.equals(rootPath)){
                             title.setText("Internal Storage");
                         }
                         else{
@@ -191,9 +204,25 @@ public class MainActivity extends AppCompatActivity {
                     selection[i] = !selection[i];
                     selectedItemIndex = i;
 
+                    if (files[i].isDirectory()){
+                        share.setVisibility(View.INVISIBLE);
+                        sharetv.setVisibility(View.INVISIBLE);
+                        rename.setVisibility(View.VISIBLE);
+                        renameTv.setVisibility(View.VISIBLE);
+                    }
+                    else{
+                        share.setVisibility(View.VISIBLE);
+                        sharetv.setVisibility(View.VISIBLE);
+                        rename.setVisibility(View.VISIBLE);
+                        renameTv.setVisibility(View.VISIBLE);
+
+
+                    }
+
                     adapter.setSelection(selection);
                     if (oneItemSelected(selection)) {
                         button_layout.setVisibility(View.VISIBLE);
+                        imagePath = files[i].getAbsolutePath();
                         move.setVisibility(View.VISIBLE);
                     } else {
                         button_layout.setVisibility(View.INVISIBLE);
@@ -279,7 +308,7 @@ public class MainActivity extends AppCompatActivity {
                         dir = new File(currentPath);
                         changeAdapterOnUpdate();
 
-                        if (currentPath.substring(currentPath.lastIndexOf('/')+1).equals('0')){
+                        if (currentPath.equals(rootPath)){
                             title.setText("Internal Storage");
                         }
                         else{
@@ -418,6 +447,30 @@ public class MainActivity extends AppCompatActivity {
 
                     changeAdapterOnUpdate();
                     moveLayout.setVisibility(View.INVISIBLE);
+                }
+            });
+
+            share.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Uri path = null;
+                    try {
+                        path = FileProvider.getUriForFile(MainActivity.this,"com.wadhavekar.FM",new File(imagePath));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    Intent shareIntent = new Intent();
+                    shareIntent.setAction(Intent.ACTION_SEND);
+                    shareIntent.putExtra(Intent.EXTRA_STREAM,path);
+                    shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    shareIntent.setType("image/*");
+                    startActivity(Intent.createChooser(shareIntent,"Share.."));
+
+                    Toast.makeText(MainActivity.this, ""+imagePath, Toast.LENGTH_SHORT).show();
+
+                    button_layout.setVisibility(View.INVISIBLE);
+                    selection = new boolean[files.length];
+                    changeAdapterOnUpdate();
                 }
             });
 
