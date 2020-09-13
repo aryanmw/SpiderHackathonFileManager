@@ -30,6 +30,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
+import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -42,6 +43,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 import static android.content.Context.ACTIVITY_SERVICE;
@@ -49,6 +51,7 @@ import static android.content.Context.ACTIVITY_SERVICE;
 public class MainActivity extends AppCompatActivity {
 
     ListView lv;
+    SearchView searchView;
     TextAdapter adapter;
     RelativeLayout button_layout, withCopyLayout;
     ImageView delete, createFolder, backToParent, copy,rename,move,share;
@@ -88,10 +91,40 @@ public class MainActivity extends AppCompatActivity {
         button_layout = findViewById(R.id.ll_buttons);
     }
 
-    String showPath;
+    @Override
+    public void onBackPressed() {
+
+        String rootPath = String.valueOf(Environment.getExternalStorageDirectory());
+
+        if (!currentPath.equals(rootPath)) {
+            currentPath = currentPath.substring(0, currentPath.lastIndexOf('/'));
+            dir = new File(currentPath);
+            changeAdapterOnUpdate();
+
+            if (currentPath.equals(rootPath)){
+                title.setText("Internal Storage");
+            }
+            else{
+                title.setText(currentPath.substring(currentPath.lastIndexOf('/')+1));
+            }
+
+//            for (int j = 0; j < selection.length; j++) {
+//                selection[j] = false;
+//            }
+            button_layout.setVisibility(View.INVISIBLE);
+
+            //showPath = showPath.substring(0, showPath.lastIndexOf('/'));
+
+        }
+        else{
+            super.onBackPressed();
+        }
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
+        searchView = findViewById(R.id.search_view);
         sharetv = findViewById(R.id.tv_share);
         renameTv= findViewById(R.id.tv_rename);
         share = findViewById(R.id.button_share);
@@ -315,6 +348,11 @@ public class MainActivity extends AppCompatActivity {
                             title.setText(currentPath.substring(currentPath.lastIndexOf('/')+1));
                         }
 
+//                        for (int j = 0; j < selection.length; j++) {
+//                            selection[j] = false;
+//                        }
+                        button_layout.setVisibility(View.INVISIBLE);
+
                         //showPath = showPath.substring(0, showPath.lastIndexOf('/'));
 
                     }
@@ -471,6 +509,19 @@ public class MainActivity extends AppCompatActivity {
                     button_layout.setVisibility(View.INVISIBLE);
                     selection = new boolean[files.length];
                     changeAdapterOnUpdate();
+                }
+            });
+
+            searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+                @Override
+                public boolean onQueryTextSubmit(String s) {
+                    return false;
+                }
+
+                @Override
+                public boolean onQueryTextChange(String s) {
+                   adapter.filter(s);
+                   return true;
                 }
             });
 
@@ -639,6 +690,7 @@ public class MainActivity extends AppCompatActivity {
 class TextAdapter extends BaseAdapter{
 
     private List<String> data;
+    private ArrayList<String> arrayList;
     private boolean[] selection;
 
     void setSelection(boolean[] selection){
@@ -653,6 +705,8 @@ class TextAdapter extends BaseAdapter{
 
     public TextAdapter(List<String> data) {
         this.data = data;
+        arrayList = new ArrayList<>();
+        arrayList.addAll(data);
     }
 
     @Override
@@ -669,6 +723,8 @@ class TextAdapter extends BaseAdapter{
     public long getItemId(int i) {
         return 0;
     }
+
+
 
     @Override
     public View getView(int i, View view, ViewGroup viewGroup) {
@@ -726,6 +782,25 @@ class TextAdapter extends BaseAdapter{
         }
         return view;
     }
+
+    public void filter(String charText){
+        charText.toLowerCase(Locale.getDefault());
+        data.clear();
+        if (charText.length() == 0){
+            data.addAll(arrayList);
+        }
+        else{
+            for (String string: arrayList){
+                if (string.toLowerCase(Locale.getDefault()).contains(charText)){
+                    data.add(string);
+                }
+            }
+        }
+        notifyDataSetChanged();
+    }
+
+
+
 
     class ViewHolder{
         TextView info;
